@@ -12,13 +12,14 @@ import logging
 
 import multiprocessing as mp
 
+import time
 from tqdm import tqdm
 from collections import OrderedDict
 from sklearn.naive_bayes import GaussianNB
 
 
 logging.basicConfig(format='%(asctime)s %(message)s', 
-                    handlers=[logging.FileHandler("pseudo_prep.log"),
+                    handlers=[logging.FileHandler("pseudo_prep-{}.log".format(time.time())),
                               logging.StreamHandler()], level=logging.DEBUG)
 
 np.random.seed(4)
@@ -89,7 +90,7 @@ def reduce_mem_usage(props):
     logging.debug("This is ",100*mem_usg/start_mem_usg,"% of the initial size")
     return props, NAlist
 
-ratings = pd.read_csv('data/tables_training_ratings_190mb.csv')
+ratings = pd.read_csv('data/train_acc.csv')
 
 
 ratings, NAs = reduce_mem_usage(ratings)
@@ -137,7 +138,7 @@ def process_user(user_id, user_ratings, movie_id_lst):
     movie_size = len(movie_ids_for_preds)
     
     new_movie_ids = set()
-    while len(new_movie_ids) < 1000:
+    while len(new_movie_ids) < 100:
         val = np.random.randint(movie_size)  
         try:
             new_movie_ids.add( movie_ids_for_preds[val] )
@@ -194,8 +195,12 @@ def process_sub_list_of_users(sub_list):
  
 
 user_id_list = list(ratings.userId.unique())
+
+# user_id_lis			t = user_id_list[30000:]
+
+logging.info("user id length: {}".format(len(user_id_list)))
   
-generate_user_ids = chunks(user_id_list,34624)
+generate_user_ids = chunks(user_id_list,1600)
 
 processes = [mp.Process(target=process_sub_list_of_users, args=(x,)) for x in generate_user_ids]
 
@@ -207,6 +212,6 @@ for p in processes:
 for p in processes:
     p.join()
 
-process_sub_list_of_users(user_id_list)
+
     
     
